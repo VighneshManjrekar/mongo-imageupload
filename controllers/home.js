@@ -13,6 +13,8 @@ exports.getIndex = (req, res) => {
 exports.uploadFiles = async (req, res) => {
     try {
         await upload(req, res)
+        console.log(req.files);
+
         if (req.files.lenght <= 0) {
             return res.status(400).send({ msg: "You must select at least 1 file" })
         }
@@ -56,6 +58,35 @@ exports.getAllFiles = async (req, res) => {
         })
 
         return res.status(200).send(fileInfos)
+
+    } catch (err) {
+        return res.status(500).send({ msg: err.message })
+    }
+}
+
+exports.getFile = async (req, res) => {
+    try {
+        await mongoClient.connect()
+
+        const database = mongoClient.db(config.DB)
+        const bucket = new GridFSBucket(database, {
+            bucketName: 'photos'
+        })
+
+        const downloadStream = bucket.openDownloadStreamByName(req.params.name)
+
+        downloadStream.on("data", function (data) {
+            return res.status(200).write(data);
+        });
+        
+        downloadStream.on('error', (err) => {
+            return res.status(404).send({ msg: "Cannot find image" })
+        })
+
+        downloadStream.on('end', () => {
+            return res.end();
+        })
+
 
     } catch (err) {
         return res.status(500).send({ msg: err.message })
