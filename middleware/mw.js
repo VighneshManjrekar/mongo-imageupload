@@ -1,7 +1,6 @@
 const util = require('util')
 const multer = require('multer')
 const { GridFsStorage } = require('multer-gridfs-storage')
-const { uploadFiles } = require('../controllers/home')
 
 const storage = new GridFsStorage({
     url: "mongodb://localhost:27017/image_upload",
