@@ -1,14 +1,10 @@
 const path = require('path')
 const { MongoClient, GridFSBucket } = require('mongodb')
 const upload = require('../middleware/mw')
+const config = process.env;
 
-const _URL = "mongodb://localhost:27017/"
 const baseUrl = "http://localhost:7030/files/"
-
-const mongoClient = new MongoClient(_URL);
-
-
-
+const mongoClient = new MongoClient(config._URL);
 
 exports.getIndex = (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'views', 'index.html'))
@@ -34,5 +30,34 @@ exports.uploadFiles = async (req, res) => {
             message: `Error when trying upload many files: ${error}`,
         });
 
+    }
+}
+
+
+exports.getAllFiles = async (req, res) => {
+    try {
+
+        await mongoClient.connect()
+        const database = mongoClient.db(config.DB)
+        const images = database.collection('photos.files')
+
+        const cursor = images.find()
+
+        if ((await images.countDocuments()) < 1) {
+            return res.status(500).send({ msg: "No files found!" })
+        }
+
+        let fileInfos = []
+        await cursor.forEach(file => {
+            fileInfos.push({
+                name: file.filename,
+                url: baseUrl + file.filename
+            })
+        })
+
+        return res.status(200).send(fileInfos)
+
+    } catch (err) {
+        return res.status(500).send({ msg: err.message })
     }
 }
